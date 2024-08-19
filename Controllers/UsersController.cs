@@ -1,5 +1,6 @@
 ﻿namespace OnlineChat.Controllers
 {
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using OnlineChat.DataModels;
@@ -15,6 +16,7 @@
             _context = context;
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {

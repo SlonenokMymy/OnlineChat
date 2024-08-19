@@ -1,5 +1,6 @@
 namespace OnlineChat.Controllers
 {
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using OnlineChat.DataModels;
 
@@ -18,7 +19,8 @@ namespace OnlineChat.Controllers
         {
             _logger = logger;
         }
-
+        [AllowAnonymous]
+        [HttpGet("public")]
         [HttpGet(Name = "GetWeatherForecast")]
         public IEnumerable<WeatherForecast> Get()
         {
