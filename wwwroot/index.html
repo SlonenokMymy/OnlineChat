@@ -4,16 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Chat UI</title>
-    <link rel="stylesheet" href="css/site.css">
+    <link rel="stylesheet" href="/css/site.css">
+    <!-- Подключение библиотеки SignalR из CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.7/signalr.min.js"></script>
+    <!-- Ваш JavaScript-файл должен быть подключен после SignalR -->
+    <script src="/js/site.js"></script>
 </head>
 <body>
-    <div id="chat-container">
-        <div id="messages" class="messages"></div>
-        <form id="chat-form" class="chat-form">
-            <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off" />
-            <button type="submit">Send</button>
-        </form>
+    <!--<div class="chat-container">
+        <div class="chat-header">Chat</div>
+        <div class="chat-messages" id="chatMessages">-->
+    <!-- Messages will be appended here -->
+    <!--</div>
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Type a message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>-->
+    <div>
+        <input type="text" id="userInput" placeholder="Your name" />
+        <input type="text" id="messageInput" placeholder="Your message" />
+        <button id="sendButton">Send</button>
     </div>
-    <script src="js/site.js"></script>
+    <ul id="messagesList"></ul>
 </body>
 </html>

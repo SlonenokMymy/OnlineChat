@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OnlineChat;
-using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Text;
 
 
@@ -30,6 +27,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
            });
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -49,18 +47,16 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
-app.UseDefaultFiles();
 app.UseStaticFiles();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    var qwe = typeof(Program).Assembly.GetManifestResourceStream("OnlineChat.wwwroot.index.html");
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("swagger/v1/swagger.json", "My API V1");
-        options.IndexStream = () => typeof(Program).Assembly.GetManifestResourceStream("OnlineChat.wwwroot.index.html");
+        options.IndexStream = () => typeof(Program).Assembly.GetManifestResourceStream("OnlineChat.wwwroot.login.html");
     });
 
     app.UseSwaggerUI(c =>
@@ -69,10 +65,17 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger-alt"; // Второй UI доступен по /swagger-alt
     });
 }
-
-app.UseHttpsRedirection();
+app.UseRouting();
 
 app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    //_ = endpoints.MapControllers();
+    _ = endpoints.MapHub<ChatHub>("/chathub");
+});
+
+app.UseHttpsRedirection();
 
 app.MapControllers();
 

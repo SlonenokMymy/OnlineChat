@@ -17,12 +17,12 @@
     {
         public int Id { get; set; }
 
-        public int ChatId { get; set; }
+        public ChatInfo Chat { get; set; }
 
         public required string Content { get; set; }
 
         public DateTime MessageDate { get; set; }
 
-        public int UserId { get; set; }
+        public User User { get; set; }
     }
 }

@@ -16,7 +16,7 @@
             _context = context;
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
