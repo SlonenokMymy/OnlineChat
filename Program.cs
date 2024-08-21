@@ -1,7 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using OnlineChat;
+using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Text;
 
 
@@ -28,15 +32,42 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "My API",
+        Version = "v1",
+        Description = "Chat Backend API",
+        Contact = new OpenApiContact
+        {
+            Name = "Rustem",
+            Email = "r.gilmutdinov93@gmail.com",
+            Url = new Uri("https://localhost:7071/")
+        }
+    });
+});
 
 var app = builder.Build();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    var qwe = typeof(Program).Assembly.GetManifestResourceStream("OnlineChat.wwwroot.index.html");
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("swagger/v1/swagger.json", "My API V1");
+        options.IndexStream = () => typeof(Program).Assembly.GetManifestResourceStream("OnlineChat.wwwroot.index.html");
+    });
+
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API Alternative UI v1");
+        c.RoutePrefix = "swagger-alt"; // Второй UI доступен по /swagger-alt
+    });
 }
 
 app.UseHttpsRedirection();
@@ -46,22 +77,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-{
-    if (env.IsDevelopment())
-    {
-        app.UseDeveloperExceptionPage();
-    }
-
-    app.UseRouting();
-
-    // Включаем аутентификацию и авторизацию
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    app.UseEndpoints(endpoints =>
-    {
-        endpoints.MapControllers();
-    });
-}
