@@ -1,9 +1,10 @@
 ﻿namespace OnlineChat.Controllers
 {
-    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Internal;
     using OnlineChat.DataModels;
+
 
     [ApiController]
     [Route("[controller]")]
@@ -42,9 +43,41 @@
         }
 
         [HttpGet("GetAllChats/{ownerId}")]
-        public async Task<IEnumerable<ChatInfo>> GetAllChats(int ownerId)
+        public async Task<IEnumerable<ChatInfoWithChatHistory>> GetAllChats(int ownerId)
         {
-            return await _context.ChatInfos.Where(x => x.OwnerId == ownerId).ToListAsync();
+            // тупо но ищем все Id чатов которые есть у пользака
+            var visibleChatIds = await _context.ChatHistories
+                .Where(x => x.User.Id == ownerId)
+                .Select(x => x.ChatId)
+                .Distinct()
+                .ToListAsync();
+
+            // получаем все чаты в которых сидит пользак
+            var visibleChats = await _context.ChatInfos
+                .Where(x => visibleChatIds.Contains(x.Id))
+                .ToListAsync();
+
+            // получаем все сообщения из чатов которые нашли выше
+            var chatsAndMessages = await _context.ChatHistories
+                .Where(x => visibleChats.Select(y => y.Id).Contains(x.ChatId))
+                .Include(x => x.User)
+                .ToListAsync();
+
+
+            var result = new List<ChatInfoWithChatHistory>();
+
+            foreach (var chat in visibleChats)
+            {
+                result.Add(new ChatInfoWithChatHistory()
+                {
+                    Id = chat.Id,
+                    ChatName = chat.ChatName,
+                    OwnerId = chat.OwnerId,
+                    ChatHistories = chatsAndMessages.Where(x => x.Chat.Id == chat.Id).OrderBy(x => x.MessageDate).ToList()
+                });
+            }
+
+            return result; 
         }
 
         [HttpPost("SaveChat")]

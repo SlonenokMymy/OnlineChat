@@ -18,5 +18,11 @@
         {
             base.OnConfiguring(optionsBuilder);
         }
+
+        // some basic sql queries, just in case
+        // Select* from users
+        // Select* from ChatInfos
+        // Select* from ChatHistories
+        // delete from ChatHistories where Id = '14'
     }
 }

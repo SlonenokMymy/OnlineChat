@@ -1,4 +1,23 @@
-﻿
+﻿document.addEventListener("DOMContentLoaded", () => {
+    // Инициализация SignalR после загрузки DOM 
+    initializeSignalR();
+
+    var user = getCurrentUser();
+    var url = `/Channels/GetAllChats/${ownerId = user.Id}`
+
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${getAuthToken()}`
+        }
+    })
+        .then(response => response.json())
+        .then(chats => {
+            chats.forEach(chat => createNewChat(chat));
+        })
+        .catch(err => console.error(err.toString()));
+});
+
 function initializeSignalR() {
     // Создание подключения к SignalR Hub
     const connection = new signalR.HubConnectionBuilder()
@@ -8,57 +27,107 @@ function initializeSignalR() {
     const currentUser = getCurrentUser();
 
     // Обработка входящих сообщений
-    connection.on("ReceiveMessage", (user, message) => {
-        addMessageToChat(user, message);
+    connection.on("ReceiveMessage", (user, message, chatId) => {
+        var mainContainer = document.getElementById('chatContainer');
+        //немного магии говнокода
+        var chatBox = mainContainer.getElementsByClassName('chat-box' + chatId)[0];
+
+        addMessageToChat(user, message, chatBox);
     });
 
     // Запуск подключения
     connection.start().catch(err => console.error(err.toString()));
-
-    // Обработка нажатия кнопки "Send"
-    document.getElementById("sendButton").addEventListener("click", () => {
-        const user = document.getElementById("userInput").value;
-        const message = document.getElementById("messageInput").value;
-        sendMessage(connection, user, message);
+    document.addEventListener('sendMessageEvent', function (event) {
+        sendMessage(connection, event.detail.user, event.detail.messageText, event.detail.chatId);
     });
+
+    localStorage.setItem('connectionR', connection);
 }
 
-function getCurrentUser() {
-    var thisUser = {
-        id : 4
-    };
-
-    return thisUser;
-}
-
-function addMessageToChat(user, message) {
+function addMessageToChat(user, message, chatBox) {
     const msg = `${user}: ${message}`;
-    const li = document.createElement("li");
-    li.textContent = msg;
-    document.getElementById("messagesList").appendChild(li);
+    const ul = document.createElement("ul");
+    ul.textContent = msg;
+    chatBox.appendChild(ul);
 }
 
-function sendMessage(connection, user, message) {
-    debugger;
+function createNewChat(chatData) {
+    // Найдите основной контейнер для чатов
+    const chatContainer = document.getElementById('chatContainer');
+
+    // Создание контейнера для нового чата
+    const chatBox = document.createElement('div');
+    chatBox.classList.add('chat-box' + chatData.id);
+
+    // Добавление заголовка чата
+    const chatHeader = document.createElement('h2');
+    chatHeader.textContent = chatData.chatName;
+    chatBox.appendChild(chatHeader);
+
+    // Создание контейнера для ввода сообщений
+    const chatInputContainer = document.createElement('div');
+    chatInputContainer.classList.add('chat-input' + chatData.id);
+
+    // Поле ввода сообщения
+    const messageInput = document.createElement('input');
+    messageInput.setAttribute('type', 'text');
+    messageInput.setAttribute('placeholder', 'Your message');
+    chatInputContainer.appendChild(messageInput);
+
+    // Кнопка отправки сообщения
+    const sendButton = document.createElement('button');
+    sendButton.textContent = 'Send';
+    chatInputContainer.appendChild(sendButton);
+
+    chatBox.appendChild(chatInputContainer);
+
+    // Список сообщений
+    chatData.chatHistories.forEach(msg => addMessageToChat(msg.user.username, msg.content, chatBox));
+
+    const user = getCurrentUser();
+
+    // Обработка отправки сообщения
+    sendButton.addEventListener('click', function () {
+        const messageText = messageInput.value.trim();
+        if (messageText) {
+            //addMessageToChat(user.Name, messageText, chatBox); // Добавление вашего сообщения
+            messageInput.value = ''; // Очистка поля ввода
+            const sendMessageEvent = new CustomEvent('sendMessageEvent', {
+                detail: {
+                    user: user,
+                    messageText: messageText,
+                    chatId: chatData.id
+                }
+            });
+            document.dispatchEvent(sendMessageEvent);
+
+        }
+    });
+
+    // Добавление чата на страницу
+    chatContainer.appendChild(chatBox);
+}
+
+function sendMessage(connection, user, message, chatId) {
     const data = {
         "id": 0,
         "chat": {
-            "id": 1,
-            "chatName": "string",
+            "id": chatId,
+            "chatName": "",
             "ownerId": 0
         },
         "content": message,
-        "messageDate": "2024-08-21T16:10:13.863Z",
+        "messageDate": new Date().toISOString(),
         "user": {
-            "id": 4,
-            "username": "string"
+            "id": user.Id,
+            "username": ""
         }
     };
-    connection.invoke("SendMessage", user, message)
+    connection.invoke("SendMessage", user.Name, message, chatId)
         .catch(err => console.error(err.toString()))
         .then(() => {
             // После отправки сообщения в SignalR, сохраняем его в БД через API
-            fetch('https://localhost:7071/Channels/SaveMessage', {
+            fetch('/Channels/SaveMessage', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -70,23 +139,13 @@ function sendMessage(connection, user, message) {
         .catch(err => console.error(err.toString()));
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Инициализация SignalR после загрузки DOM
-    initializeSignalR();
-
-    fetch('/Channels/GetChatHistory/1', {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${getAuthToken()}`
-        }
-    })
-        .then(response => response.json())
-        .then(messages => {
-            messages.forEach(msg => addMessageToChat(msg.user, msg.content));
-        })
-        .catch(err => console.error(err.toString()));
-});
-
 function getAuthToken() {
     return localStorage.getItem('authToken');
+}
+
+function getCurrentUser() {
+    return user = {
+        "Name": localStorage.getItem('userName'),
+        "Id": localStorage.getItem('userId'),
+    };
 }

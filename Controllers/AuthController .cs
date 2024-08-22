@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -10,23 +12,23 @@ namespace OnlineChat.Controllers
     [Route("api/[controller]")]
     public class AuthController : Controller
     {
-        [HttpPost("login")]
-        public IActionResult Login([FromBody] UserLogin model)
+        private readonly ChatDbContext _context;
+
+        public AuthController(ChatDbContext context)
         {
-            // Проверяем учетные данные пользователя (в реальной ситуации, следует использовать базу данных)
-            if (model.Username == "admin" && model.Password == "admin")
+            _context = context;
+        }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] UserLogin model)
+        {
+            var user = await _context.Users.Where(x => x.Username == model.Username).SingleOrDefaultAsync();
+            // Проверяем учетные данные пользователя (в реальной ситуации, следует использовать базу данных) + там где то якобы мы достаём пароли и всё ок
+            if (user != null)
             {
                 var token = GenerateJwtToken(model.Username);
 
-                return Ok(new { token });
-            }
-
-
-            if (model.Username == "altadmin" && model.Password == "altadmin")
-            {
-                var token = GenerateJwtToken(model.Username);
-
-                return Ok(new { token });
+                return Ok(new { token, user.Username, user.Id });
             }
 
             return Unauthorized();
@@ -36,10 +38,10 @@ namespace OnlineChat.Controllers
         {
             var claims = new[]
             {
-            new Claim(JwtRegisteredClaimNames.Sub, username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Role, "Admin") // Присваиваем роль
-        };
+                new Claim(JwtRegisteredClaimNames.Sub, username),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.Role, "Admin") // Присваиваем роль
+            };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ThisIsAVeryStrongKeyWithMoreThan32Chars"));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

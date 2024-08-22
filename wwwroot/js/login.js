@@ -22,7 +22,11 @@
             }
 
             const data = await response.json();
+
             localStorage.setItem('authToken', data.token);
+            localStorage.setItem('userId', data.id);
+            localStorage.setItem('userName', data.username);
+
             window.location.href = '/index.html'; // Перенаправление на страницу чата
         } catch (error) {
             errorMessage.textContent = error.message;
